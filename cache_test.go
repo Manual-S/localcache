@@ -13,7 +13,7 @@ func TestCache_Set(t *testing.T) {
 			key := "key"
 			cache.Set(key, Item{
 				Object: i,
-			})
+			}, 0)
 		}(i)
 	}
 
