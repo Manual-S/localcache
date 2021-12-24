@@ -6,19 +6,23 @@ import (
 )
 
 func TestList(t *testing.T) {
-	//l := list.New()
-	//l.PushBack(4)
-	//l.PushBack(1)
-	//e := l.Front()
-	//fmt.Println(e.Value)
+	capacity := 2
+	lru := NewLRUCache(capacity)
+	lru.Put("1", Item{
+		Key:    "1",
+		Object: "1",
+	})
 
-	cache := Constructor(2)
-	cache.Put(2, 1)
-	cache.Put(1, 1)
-	cache.Put(2, 3)
-	cache.Put(4, 1)
-	res := cache.Get(1)
-	fmt.Println(res)
-	res = cache.Get(2)
-	fmt.Println(res)
+	lru.Put("2", Item{
+		Key:    "2",
+		Object: "2",
+	})
+
+	lru.Put("3", Item{
+		Key:    "3",
+		Object: "3",
+	})
+
+	value := lru.Get("1")
+	fmt.Println(value)
 }

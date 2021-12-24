@@ -3,47 +3,54 @@ package main
 
 import (
 	"container/list"
+	"sync"
 )
 
-type Node struct {
-	Key   int
-	Value int
+// Item 存储实体
+type Item struct {
+	Key        string
+	Object     interface{}
+	Expiration int64 // 过期时间 如果过期时间为0 则不过期
 }
 
 type LRUCache struct {
 	capacity int
-	m        map[int]*list.Element
-	cache    list.List
+	hash     map[string]*list.Element
+	cache    *list.List
+	lock     sync.RWMutex
 }
 
-func Constructor(capacity int) LRUCache {
-	hash := make(map[int]*list.Element)
+func NewLRUCache(capacity int) LRUCache {
+	hash := make(map[string]*list.Element)
 	return LRUCache{
 		capacity: capacity,
-		m:        hash,
+		hash:     hash,
+		cache:    list.New(),
 	}
 }
 
 // Get 查看map中是否存在该元素
-func (c *LRUCache) Get(key int) int {
-	it, ok := c.m[key]
+func (c *LRUCache) Get(key string) (interface{}, bool) {
+	it, ok := c.hash[key]
+
 	if !ok {
-		return -1
+		return nil, false
 	}
 
 	// 操作list
 	c.cache.MoveBefore(it, c.cache.Front())
-	return it.Value.(Node).Value
+	return it.Value.(Item).Object, true
 }
 
-func (c *LRUCache) Put(key int, value int) {
-	it, ok := c.m[key]
+func (c *LRUCache) Put(key string, value Item) {
+	it, ok := c.hash[key]
 
 	if ok {
 		// key已经存在  更新key值
-		it.Value = Node{
-			Key:   key,
-			Value: value,
+		it.Value = Item{
+			Key:        value.Key,
+			Object:     value.Object,
+			Expiration: value.Expiration,
 		}
 		// 调整list
 		// c.cache.MoveAfter(it, c.cache.Front())
@@ -57,14 +64,15 @@ func (c *LRUCache) Put(key int, value int) {
 		temp := c.cache.Back()
 		c.cache.Remove(temp)
 		// hash也要做删除
-		delete(c.m, temp.Value.(Node).Key)
+		delete(c.hash, temp.Value.(Item).Key)
 	}
 
 	// 正常添加元素
-	c.cache.PushFront(Node{
-		Key:   key,
-		Value: value,
+	c.cache.PushFront(Item{
+		Key:        value.Key,
+		Object:     value.Object,
+		Expiration: value.Expiration,
 	})
 
-	c.m[key] = c.cache.Front()
+	c.hash[key] = c.cache.Front()
 }

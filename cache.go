@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-type Item struct {
-	Object     interface{}
-	Expiration int64 // 过期时间 如果过期时间为0 则不过期
-}
-
 // Expired 过期返回true 不过期返回false
 func (item Item) Expired() bool {
 	if item.Expiration == 0 {
@@ -25,7 +20,6 @@ type Cache struct {
 type cache struct {
 	data map[string]Item // 存放缓存的底层结构
 	mu   sync.RWMutex    // go提供的读写锁
-
 }
 
 func (c *Cache) Get(key string) (interface{}, bool) {
