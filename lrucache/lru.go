@@ -1,5 +1,5 @@
 // 实现lru算法 参考leetcode146
-package main
+package lrucache
 
 import (
 	"container/list"

@@ -1,9 +1,17 @@
-package main
+package cache
 
 import (
+	"cache/lrucache"
 	"sync"
 	"time"
 )
+
+// Item 存储实体
+type Item struct {
+	Key        string
+	Object     interface{}
+	Expiration int64 // 过期时间 如果过期时间为0 则不过期
+}
 
 // Expired 过期返回true 不过期返回false
 func (item Item) Expired() bool {
@@ -18,8 +26,8 @@ type Cache struct {
 }
 
 type cache struct {
-	data map[string]Item // 存放缓存的底层结构
-	mu   sync.RWMutex    // go提供的读写锁
+	data map[string]lrucache.Item // 存放缓存的底层结构
+	mu   sync.RWMutex             // go提供的读写锁
 }
 
 func (c *Cache) Get(key string) (interface{}, bool) {
@@ -34,14 +42,14 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 	return item.Object, true
 }
 
-func (c *Cache) Set(key string, value Item, d time.Duration) {
+func (c *Cache) Set(key string, value lrucache.Item, d time.Duration) {
 	var end int64
 	if d > 0 {
 		end = time.Now().Add(d).UnixNano()
 	}
 
 	c.mu.Lock()
-	c.data[key] = Item{
+	c.data[key] = lrucache.Item{
 		Object:     value.Object,
 		Expiration: end,
 	}
@@ -53,14 +61,14 @@ func (c *Cache) set(key string, value interface{}, d time.Duration) {
 	if d > 0 {
 		end = time.Now().Add(d).UnixNano()
 	}
-	c.data[key] = Item{
+	c.data[key] = lrucache.Item{
 		Object:     value,
 		Expiration: end,
 	}
 }
 
 func NewCache() *Cache {
-	items := make(map[string]Item)
+	items := make(map[string]lrucache.Item)
 	c := &cache{
 		data: items,
 	}

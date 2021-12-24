@@ -1,6 +1,7 @@
-package main
+package cache
 
 import (
+	"cache/lrucache"
 	"fmt"
 	"testing"
 	"time"
@@ -11,7 +12,7 @@ func TestCache_Set(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		go func(i int) {
 			key := "key"
-			cache.Set(key, Item{
+			cache.Set(key, lrucache.Item{
 				Object: i,
 			}, 0)
 		}(i)
