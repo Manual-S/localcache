@@ -3,7 +3,9 @@ package main
 
 import (
 	"container/list"
+	"errors"
 	"sync"
+	"time"
 )
 
 // Item 存储实体
@@ -20,17 +22,21 @@ type LRUCache struct {
 	lock     sync.RWMutex
 }
 
-func NewLRUCache(capacity int) LRUCache {
+func NewLRUCache(capacity int) (LRUCache, error) {
+	if capacity <= 0 {
+		return LRUCache{}, errors.New("capacity size < 0 ")
+	}
 	hash := make(map[string]*list.Element)
 	return LRUCache{
 		capacity: capacity,
 		hash:     hash,
 		cache:    list.New(),
-	}
+	}, nil
 }
 
 // Get 查看map中是否存在该元素
 func (c *LRUCache) Get(key string) (interface{}, bool) {
+	c.lock.RLock()
 	it, ok := c.hash[key]
 
 	if !ok {
@@ -39,23 +45,32 @@ func (c *LRUCache) Get(key string) (interface{}, bool) {
 
 	// 操作list
 	c.cache.MoveBefore(it, c.cache.Front())
+	c.lock.RUnlock()
 	return it.Value.(Item).Object, true
 }
 
-func (c *LRUCache) Put(key string, value Item) {
+func (c *LRUCache) Put(key string, value Item, d time.Duration) {
+	c.lock.Lock()
+
 	it, ok := c.hash[key]
+
+	var end int64
+	if d > 0 {
+		end = time.Now().Add(d).UnixNano()
+	}
 
 	if ok {
 		// key已经存在  更新key值
 		it.Value = Item{
 			Key:        value.Key,
 			Object:     value.Object,
-			Expiration: value.Expiration,
+			Expiration: end,
 		}
 		// 调整list
 		// c.cache.MoveAfter(it, c.cache.Front())
 		c.cache.MoveToFront(it)
 		// 返回
+		c.lock.Unlock()
 		return
 	}
 
@@ -75,4 +90,12 @@ func (c *LRUCache) Put(key string, value Item) {
 	})
 
 	c.hash[key] = c.cache.Front()
+	c.lock.Unlock()
+}
+
+func (c *LRUCache) Len() int {
+	c.lock.RLock()
+	length := c.cache.Len()
+	c.lock.RUnlock()
+	return length
 }
